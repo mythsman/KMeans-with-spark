@@ -116,8 +116,10 @@ class MyKMeans private (
     val centers =
       if (initializationMode == RANDOM) {
         initRandom(data)
-      } else {
+      } else if (initializationMode == K_MEANS_PARALLEL) {
         initMyKMeansParallel(data)
+      } else {
+        initRandom(data)
       }
 
     val active = Array.fill(numRuns)(true)
@@ -207,6 +209,7 @@ class MyKMeans private (
   }
 
   private def initMyKMeansParallel(data: RDD[VectorWithNorm]): Array[Array[VectorWithNorm]] = {
+
     val centers = Array.tabulate(runs)(r => ArrayBuffer.empty[VectorWithNorm])
     var costs = data.map(_ => Array.fill(runs)(Double.PositiveInfinity))
 
