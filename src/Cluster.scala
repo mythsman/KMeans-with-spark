@@ -9,6 +9,8 @@ import org.apache.spark.mllib.feature.IDF
 import org.apache.spark.rdd.RDD
 import org.apache.spark.mllib.stat.Statistics
 import org.apache.spark.mllib.feature.Normalizer
+import org.apache.spark.RangePartitioner
+import org.apache.spark.HashPartitioner
 
 object Cluster {
   val sc = new SparkContext(new SparkConf());
@@ -18,11 +20,11 @@ object Cluster {
   var clusters: Int = 0;
 
   def predictDenseByMllib(initializationMode: String, similarityMode: String) {
-    val data = sc.textFile(inputPath).map(s => Vectors.dense(s.split(" ").map(_.toDouble))).cache
+    val data = sc.textFile(inputPath, 48).map(s => Vectors.dense(s.split(" ").map(_.toDouble))).cache
     val model = new MyKMeans()
       .setInitializationMode(initializationMode)
       .setK(this.clusters)
-      .setRuns(1)
+      .setRuns(10)
       .setSimilarityMode(similarityMode)
       .run(data)
     val res = data.map(item => model.predict(item))
@@ -31,7 +33,7 @@ object Cluster {
 
   def predictSparseByMllib(initializationMode: String, similarityMode: String, row: Int) {
 
-    val data = sc.textFile(inputPath)
+    val data = sc.textFile(inputPath, 112)
       .map(s => {
         val splited = s.trim.split("\\s+")
         val value = new Array[Double](splited.size / 2)
@@ -45,17 +47,18 @@ object Cluster {
         }
         Vectors.sparse(row + 1, idx, value)
       })
+
     val idf = new IDF(minDocFreq = 2).fit(data)
     val tfidf = idf.transform(data)
     val normalizer = new Normalizer()
     val normalized = tfidf.map(x => normalizer.transform(x)).cache
+
     val model = new MyKMeans()
       .setInitializationMode(initializationMode)
       .setK(this.clusters)
       .setRuns(10)
       .setSimilarityMode(similarityMode)
       .run(normalized)
-
     val res = normalized.map(item => model.predict(item))
     res.saveAsTextFile(outputPath)
   }
@@ -68,15 +71,14 @@ object Cluster {
     }
     this.inputPath = args(0)
     this.outputPath = args(1)
-    //    this.clusters = 23
-    //    predictDenseByMllib("k-means||", "COS")
+    //    this.clusters = 9
+    //    predictSparseByMllib("k-means||", "COS", 6429)
     this.clusters = 20
     predictSparseByMllib("k-means||", "COS", 287985)
-
-//    (0 until 20).foreach(i => {
-//      this.outputPath = args(1) + i
-//      predictSparseByMllib("k-means||", "COS", 287985)
-//    })
-
+    //
+    //        (0 until 20).foreach(i => {
+    //          this.outputPath = args(1) + i
+    //          predictSparseByMllib("k-means||", "COS", 6429)
+    //        })
   }
 }

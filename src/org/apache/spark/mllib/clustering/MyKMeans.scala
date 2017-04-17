@@ -3,7 +3,6 @@ package org.apache.spark.mllib.clustering
 import scala.Array.canBuildFrom
 import scala.Option.option2Iterable
 import scala.collection.mutable.ArrayBuffer
-
 import org.apache.spark.Logging
 import org.apache.spark.annotation.Since
 import org.apache.spark.mllib.linalg.BLAS.axpy
@@ -17,6 +16,7 @@ import org.apache.spark.rdd.RDD.rddToPairRDDFunctions
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.util.Utils
 import org.apache.spark.util.random.XORShiftRandom
+import org.apache.spark.RangePartitioner
 
 class MyKMeans private (
   private var k: Int,
@@ -37,7 +37,7 @@ class MyKMeans private (
   var scaleVector: Vector = Vectors.dense(0)
   var varianceVector: Vector = Vectors.dense(0)
 
-  def this() = this(2, 20, 1, "k-means||", "COS", 5, 1e-8, Utils.random.nextLong())
+  def this() = this(2, 10, 1, "k-means||", "COS", 5, 1e-8, Utils.random.nextLong())
 
   def getK: Int = k
 
